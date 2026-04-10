@@ -3,11 +3,32 @@ from __future__ import annotations
 import hashlib
 import math
 
-LOCAL_EMBEDDING_MODEL = "all-MiniLM-L6-v2"
+LOCAL_EMBEDDING_MODEL = "nomic-embed-text"
 OPENAI_EMBEDDING_MODEL = "text-embedding-3-small"
 EMBEDDING_PROVIDER_ENV = "EMBEDDING_PROVIDER"
 
+# embeddings.py — thêm vào cuối
+class OllamaEmbedder:
+    """Ollama local embedder qua HTTP API."""
 
+    def __init__(
+        self,
+        model_name: str = LOCAL_EMBEDDING_MODEL,
+        base_url: str = "http://localhost:11434",
+    ) -> None:
+        import requests
+        self.model_name = model_name
+        self.base_url = base_url
+        self._backend_name = f"ollama:{model_name}"
+        self._requests = requests
+
+    def __call__(self, text: str) -> list[float]:
+        response = self._requests.post(
+            f"{self.base_url}/api/embeddings",
+            json={"model": self.model_name, "prompt": text},
+        )
+        response.raise_for_status()
+        return response.json()["embedding"]
 class MockEmbedder:
     """Deterministic embedding backend used by tests and default classroom runs."""
 
